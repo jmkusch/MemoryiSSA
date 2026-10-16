@@ -1,0 +1,29 @@
+#' @title Predict H1 long term nitrogen
+#' @export
+#' @author Jillian M. Kusch
+predict_h1_nitrogen_long_term_by_year <- function(DT, models) {
+  N <- 100L
+  
+  setDT(DT)
+  predictions <- lapply(models, function(model_, DT)   {
+    year <- model_[[1]]
+    model <- model_[[2]]
+    DT <- DT[yr == year]
+    new_data <- DT[, .(
+      indiv_step_id = NA ,
+      yr = NA,
+      prop_forest = mean(prop_forest, na.rm = TRUE),
+      memory_long_term = mean(memory_long_term, na.rm = TRUE),
+      distancetofusion_long_term = mean(distancetofusion_long_term, na.rm = TRUE),
+      nitrogen_memory_long_term = seq(from = min(nitrogen_memory_long_term), to = max(nitrogen_memory_long_term), length.out = N)
+      
+    ), by = id]
+    
+    new_data[, h1_nitrogen_long_term := predict(model, .SD, type = 'link', re.form = NULL)]
+    
+    new_data[, x := seq(from = min(nitrogen_memory_long_term), to = max(nitrogen_memory_long_term), length.out = N), by = id]
+    
+    return(list(year,new_data))
+  },DT)
+  return(predictions)
+}
