@@ -17,9 +17,9 @@ sdss_legend_path <- file.path('input', 'legend_sdss.csv')
 lichen_path <- file.path('input', 'Cladonia_N.tif')
 
 # Caribou data path
-gps_path <- file.path('input', 'all_Fogo_caribou_locs_20June2025.csv')
+# gps_path <- file.path('input', 'all_Fogo_caribou_locs_20June2025.csv')
 id_path <- file.path('input', 'collar-animal-ids.csv')
-
+tracks_lc_path <- file.path('input','tracks_lc.csv')
 # Variables ---------------------------------------------------------------
 bb <- c(
   xmin = -54.3533,
@@ -56,174 +56,170 @@ time_frame = 14
 grid_size = 200
 blurring_range = 500
 valid_years = c(2018,2019,2024,2025)
+
 # Targets: data -----------------------------------------------------------
 targets_data <- c(
-  
   tar_file_read(
-    caribou,
-    gps_path,
+    tracks_lc,
+    tracks_lc_path,
     fread(!!.x)
-  ),
-  tar_file_read(
-    ids,
-    id_path,
-    fread(!!.x)
-  ),
- 
-  tar_file_read(
-    sdss,
-    sdss_path,
-    raster(!!.x)
-  ),
-  tar_file_read(
-    sdss_legend,
-    sdss_legend_path,
-    fread(!!.x)
-  ),
-  
-  tar_file_read(
-    lichen,
-    lichen_path,
-    raster(!!.x)
   )
- 
+  # tar_file_read(
+  #   caribou,
+  #   gps_path,
+  #   fread(!!.x)
+  # ),
+  # tar_file_read(
+  #   ids,
+  #   id_path,
+  #   fread(!!.x)
+  # ),
+  # 
+  # tar_file_read(
+  #   sdss,
+  #   sdss_path,
+  #   raster(!!.x)
+  # ),
+  # tar_file_read(
+  #   sdss_legend,
+  #   sdss_legend_path,
+  #   fread(!!.x)
+  # ),
+  # 
+  # tar_file_read(
+  #   lichen,
+  #   lichen_path,
+  #   raster(!!.x)
+  # )
+  
 )
 
 # Targets: preparing caribou data ---------------------------
-targets_prep <- c(
-  
-  tar_target(
-    tidy_GPS,
-    GPS_tidying(caribou, ids)
-  ),
-  tar_target(
-    locs_prep,
-    prepare_locs(tidy_GPS, id_col, datetime_col, tz, x_col, y_col, split_by),
-    iteration = 'group'
-  ),
-  tar_target(
-    split_key,
-    unique(locs_prep[, .SD, .SDcols = c(split_by, 'tar_group')])
-  )
-  
-)
-
-
-# Targets: tracks ---------------------------------------------------------
-targets_tracks <- c(
-  tar_target(
-    tracks,
-    make_track(locs_prep, x_, y_, t_, all_cols = TRUE, crs = 4326) |>
-      transform_coords(crs_to = crs),
-    pattern = map(locs_prep)
-  ),
-  tar_target(
-    tracks_resampled,
-    resample_tracks(tracks, rate = rate, tolerance = tolerance),
-    pattern = map(tracks)
-  ),
-  tar_target(
-    tracks_random,
-    random_steps(tracks_resampled, n_control = n_random_steps),
-    pattern = map(tracks_resampled)
-  )
-)
-
-## Extracting data for tracks ------------------------------
-
-targets_extract <- c(
-  
-  tar_target(
-    tracks_random_cleaned,
-    remove_NA_steps(tracks_random)
-  ),
-
-  tar_target(
-    memory_short_term,
-    extract_memory_short_term(
-      tracks_resampled, 
-      tracks_random_cleaned,
-      time_frame, # number of days
-      grid_size,
-      blurring_range
-    )
-  ),
-  
-  tar_target(
-    memory_long_term,
-    extract_memory_long_term(
-      tracks_resampled,
-      memory_short_term
-      )
-  ),
-  
-  tar_target(
-    fusion_long_term,
-    extract_fusion_long_term(
-      tracks_resampled, 
-      memory_long_term
-    )
-  ),
-
-  tar_target(
-    fusion_short_term,
-    extract_fusion_short_term(
-      tracks_resampled, 
-      fusion_long_term,
-      time_frame
-    )
-  ), 
-  
-  tar_target(
-    nitrogen_short_memory,
-    extract_nitrogen_memory_short_term(
-      fusion_short_term, 
-      lichen,
-      time_frame, 
-      grid_size,
-      blurring_range
-      
-    )
-  ), 
-
-  tar_target(
-    nitrogen_long_memory,
-    extract_nitrogen_memory_long_term(
-      nitrogen_short_memory, 
-      lichen
-    )
-  ), 
-  
-  # SDSS call
-  tar_target(
-    tracks_extract,
-    extract_layers(
-      nitrogen_long_memory,
-      crs,
-      sdss,
-      sdss_legend
-    )
-  ),
-  
-  tar_target(
-    tracks_lc,
-    extract_forest(
-      tracks_extract,
-      crs,
-      sdss,
-      3
-    )
-  )
-)
-
-# Targets: distributions --------------------------------------------------
-targets_distributions <- c(
-  tar_target(
-    dist_parameters,
-    calc_distribution_parameters(tracks_random),
-    pattern = map(tracks_random)
-  )
-)
+# targets_prep <- c(
+#   
+#   tar_target(
+#     tidy_GPS,
+#     GPS_tidying(caribou, ids)
+#   ),
+#   tar_target(
+#     locs_prep,
+#     prepare_locs(tidy_GPS, id_col, datetime_col, tz, x_col, y_col, split_by),
+#     iteration = 'group'
+#   ),
+#   tar_target(
+#     split_key,
+#     unique(locs_prep[, .SD, .SDcols = c(split_by, 'tar_group')])
+#   )
+#   
+# )
+# 
+# 
+# # Targets: tracks ---------------------------------------------------------
+# targets_tracks <- c(
+#   tar_target(
+#     tracks,
+#     make_track(locs_prep, x_, y_, t_, all_cols = TRUE, crs = 4326) |>
+#       transform_coords(crs_to = crs),
+#     pattern = map(locs_prep)
+#   ),
+#   tar_target(
+#     tracks_resampled,
+#     resample_tracks(tracks, rate = rate, tolerance = tolerance),
+#     pattern = map(tracks)
+#   ),
+#   tar_target(
+#     tracks_random,
+#     random_steps(tracks_resampled, n_control = n_random_steps),
+#     pattern = map(tracks_resampled)
+#   )
+# )
+# 
+# ## Extracting data for tracks ------------------------------
+# 
+# targets_extract <- c(
+#   
+#   tar_target(
+#     tracks_random_cleaned,
+#     remove_NA_steps(tracks_random)
+#   ),
+# 
+#   tar_target(
+#     memory_short_term,
+#     extract_memory_short_term(
+#       tracks_resampled, 
+#       tracks_random_cleaned,
+#       time_frame, # number of days
+#       grid_size,
+#       blurring_range
+#     )
+#   ),
+#   
+#   tar_target(
+#     memory_long_term,
+#     extract_memory_long_term(
+#       tracks_resampled,
+#       memory_short_term
+#       )
+#   ),
+#   
+#   tar_target(
+#     fusion_long_term,
+#     extract_fusion_long_term(
+#       tracks_resampled, 
+#       memory_long_term
+#     )
+#   ),
+# 
+#   tar_target(
+#     fusion_short_term,
+#     extract_fusion_short_term(
+#       tracks_resampled, 
+#       fusion_long_term,
+#       time_frame
+#     )
+#   ), 
+#   
+#   tar_target(
+#     nitrogen_short_memory,
+#     extract_nitrogen_memory_short_term(
+#       fusion_short_term, 
+#       lichen,
+#       time_frame, 
+#       grid_size,
+#       blurring_range
+#       
+#     )
+#   ), 
+# 
+#   tar_target(
+#     nitrogen_long_memory,
+#     extract_nitrogen_memory_long_term(
+#       nitrogen_short_memory, 
+#       lichen
+#     )
+#   ), 
+#   
+#   # SDSS call
+#   tar_target(
+#     tracks_extract,
+#     extract_layers(
+#       nitrogen_long_memory,
+#       crs,
+#       sdss,
+#       sdss_legend
+#     )
+#   ),
+#   
+#   tar_target(
+#     tracks_lc,
+#     extract_forest(
+#       tracks_extract,
+#       crs,
+#       sdss,
+#       3
+#     )
+#   )  
+# )
 
 # Targets: seasonal models ----------------------------------------------------------
 targets_winter <- c(
